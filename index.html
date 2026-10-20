@@ -1,1 +1,120 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Network Explorer</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        header {
+            background: #17365d;
+            color: white;
+            padding: 24px;
+        }
+
+        header h1 {
+            margin: 0 0 8px;
+        }
+
+        header p {
+            margin: 0;
+            color: #dbeafe;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: auto;
+            padding: 24px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #0000000d;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            color: #17365d;
+        }
+
+        #map-placeholder {
+            min-height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e2e8f0;
+            border-radius: 8px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 800px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Flight Network Explorer</h1>
+        <p>Explore airports and domestic flight connections across the United States.</p>
+    </header>
+
+    <main>
+        <div class="layout">
+
+            <section class="panel">
+                <h2>A. Network Map</h2>
+                <div id="map-placeholder">
+                    The interactive airport map will appear here.
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>B. Airport Lookup</h2>
+                <p>Search for an airport by its code.</p>
+            </section>
+
+            <section class="panel">
+                <h2>C. Network Summary</h2>
+                <p>Airport counts, connected components, and the largest hubs will go here.</p>
+            </section>
+
+            <section class="panel">
+                <h2>D. Connection Checker</h2>
+                <p>Check whether two airports are connected.</p>
+            </section>
+
+        </div>
+
+        <section class="panel" style="margin-top: 20px;">
+            <h2>E. About the Data</h2>
+            <p>Information about the airport and route data will go here.</p>
+        </section>
+    </main>
+
+</body>
+</html>
+
