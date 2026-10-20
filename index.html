@@ -6,14 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flight Network Explorer</title>
 
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
+            font-family: Arial, sans-serif;
             background: #f1f5f9;
             color: #1e293b;
         }
@@ -24,14 +25,8 @@
             padding: 24px;
         }
 
-        header h1 {
-            margin: 0 0 8px;
-        }
-
-        header p {
-            margin: 0;
-            color: #dbeafe;
-        }
+        header h1 { margin: 0 0 8px; }
+        header p { margin: 0; color: #dbeafe; }
 
         main {
             max-width: 1400px;
@@ -46,6 +41,7 @@
         }
 
         .panel {
+            min-width: 0;
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -57,64 +53,359 @@
             color: #17365d;
         }
 
-        #map-placeholder {
-            min-height: 350px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #e2e8f0;
+        #map {
+            height: 480px;
+            width: 100%;
             border-radius: 8px;
-            text-align: center;
-            padding: 20px;
         }
 
+        input, button {
+            padding: 10px;
+            margin: 4px 0;
+            font-size: 15px;
+            max-width: 100%;
+        }
+
+        input {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #17365d;
+            color: white;
+            border: 0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover { background: #28558a; }
+
+        .result {
+            margin-top: 12px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .stat {
+            background: #eff6ff;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+        }
+
+        #hub-list { padding-left: 22px; }
+
+        .about { margin-top: 20px; }
+
         @media (max-width: 800px) {
-            .layout {
-                grid-template-columns: 1fr;
-            }
+            .layout { grid-template-columns: 1fr; }
+            #map { height: 360px; }
         }
     </style>
 </head>
 <body>
+<header>
+    <h1>Flight Network Explorer</h1>
+    <p>Explore airports and domestic flight connections across the United States.</p>
+</header>
 
-    <header>
-        <h1>Flight Network Explorer</h1>
-        <p>Explore airports and domestic flight connections across the United States.</p>
-    </header>
+<main>
+    <p id="status">Loading airport and route data...</p>
 
-    <main>
-        <div class="layout">
-
-            <section class="panel">
-                <h2>A. Network Map</h2>
-                <div id="map-placeholder">
-                    The interactive airport map will appear here.
-                </div>
-            </section>
-
-            <section class="panel">
-                <h2>B. Airport Lookup</h2>
-                <p>Search for an airport by its code.</p>
-            </section>
-
-            <section class="panel">
-                <h2>C. Network Summary</h2>
-                <p>Airport counts, connected components, and the largest hubs will go here.</p>
-            </section>
-
-            <section class="panel">
-                <h2>D. Connection Checker</h2>
-                <p>Check whether two airports are connected.</p>
-            </section>
-
-        </div>
-
-        <section class="panel" style="margin-top: 20px;">
-            <h2>E. About the Data</h2>
-            <p>Information about the airport and route data will go here.</p>
+    <div class="layout">
+        <section class="panel">
+            <h2>A. Network Map</h2>
+            <p>Airport locations and domestic connections. Select an airport marker for details.</p>
+            <div id="map"></div>
         </section>
-    </main>
 
+        <section class="panel">
+            <h2>B. Airport Lookup</h2>
+            <p>Search using a three-letter airport code, such as ATL or TLH.</p>
+            <label for="airport-code">Airport code</label>
+            <input id="airport-code" maxlength="3" placeholder="e.g. ATL">
+            <button id="search-button">Find airport</button>
+            <div id="airport-result" class="result" aria-live="polite"></div>
+        </section>
+
+        <section class="panel">
+            <h2>C. Network Summary</h2>
+            <div id="summary">Calculating network statistics...</div>
+            <h3>Top 10 airports by degree</h3>
+            <p>Degree means the number of distinct connected airports.</p>
+            <ol id="hub-list"></ol>
+        </section>
+
+        <section class="panel">
+            <h2>D. Connection Checker</h2>
+            <p>Use BFS to find a path through the network between two airports.</p>
+            <label for="source-code">Starting airport</label>
+            <input id="source-code" maxlength="3" placeholder="e.g. TLH">
+            <label for="destination-code">Destination airport</label>
+            <input id="destination-code" maxlength="3" placeholder="e.g. LAX">
+            <button id="connection-button">Check connection</button>
+            <div id="connection-result" class="result" aria-live="polite"></div>
+        </section>
+    </div>
+
+    <section class="panel about">
+        <h2>E. About the Data</h2>
+        <p>
+            This project represents airports as vertices and unique domestic
+            airport connections as edges. Airport coordinates are used to plot
+            the map. The network summary calculates airport degrees and connected
+            components. The connection checker uses breadth-first search (BFS)
+            to determine whether a path exists between two airports.
+        </p>
+        <p>
+            Data source: OpenFlights airport and route datasets. The website
+            uses the prepared JSON files in the data folder.
+        </p>
+        <p>
+            Results reflect the airports and routes included in the supplied
+            dataset; they may not represent current airline schedules.
+        </p>
+    </section>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+async function startApp() {
+    const status = document.getElementById("status");
+
+    try {
+        const [airportResponse, routeResponse] = await Promise.all([
+            fetch("data/airports.json"),
+            fetch("data/routes.json")
+        ]);
+
+        if (!airportResponse.ok || !routeResponse.ok) {
+            throw new Error("Could not load JSON files. Check the data folder and filenames.");
+        }
+
+        const airports = await airportResponse.json();
+        const routes = await routeResponse.json();
+
+        const byId = new Map();
+        const byCode = new Map();
+        const adjacency = new Map();
+
+        for (const airport of airports) {
+            byId.set(String(airport.id), airport);
+            byCode.set(airport.iata.toUpperCase(), airport);
+            adjacency.set(String(airport.id), new Set());
+        }
+
+        for (const route of routes) {
+            const a = String(route.source);
+            const b = String(route.target);
+
+            if (!adjacency.has(a) || !adjacency.has(b)) continue;
+
+            adjacency.get(a).add(b);
+            adjacency.get(b).add(a);
+        }
+
+        const degree = new Map();
+        for (const [id, neighbors] of adjacency) {
+            degree.set(id, neighbors.size);
+        }
+
+        // Set up the map.
+        const map = L.map("map").setView([39, -98], 4);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors",
+            maxZoom: 18
+        }).addTo(map);
+
+        const routeLayer = L.layerGroup().addTo(map);
+        const airportLayer = L.layerGroup().addTo(map);
+        const canvasRenderer = L.canvas({ padding: 0.5 });
+
+        for (const route of routes) {
+            const a = byId.get(String(route.source));
+            const b = byId.get(String(route.target));
+            if (!a || !b) continue;
+
+            L.polyline([[a.lat, a.lon], [b.lat, b.lon]], {
+                renderer: canvasRenderer,
+                color: "#64748b",
+                weight: 1,
+                opacity: 0.18,
+                interactive: false
+            }).addTo(routeLayer);
+        }
+
+        for (const airport of airports) {
+            const marker = L.circleMarker([airport.lat, airport.lon], {
+                radius: 3,
+                color: "#17365d",
+                fillColor: "#38bdf8",
+                fillOpacity: 0.8,
+                weight: 1
+            });
+
+            marker.bindPopup(
+                "<strong>" + airport.iata + " — " + airport.name + "</strong><br>" +
+                airport.city + "<br>Degree: " +
+                (degree.get(String(airport.id)) || 0)
+            );
+
+            marker.addTo(airportLayer);
+            airport.marker = marker;
+        }
+
+        // Find connected components using BFS.
+        const visited = new Set();
+        const components = [];
+
+        for (const airport of airports) {
+            const start = String(airport.id);
+            if (visited.has(start)) continue;
+
+            const queue = [start];
+            const component = [];
+            visited.add(start);
+
+            for (let i = 0; i < queue.length; i++) {
+                const current = queue[i];
+                component.push(current);
+
+                for (const neighbor of (adjacency.get(current) || [])) {
+                    if (!visited.has(neighbor)) {
+                        visited.add(neighbor);
+                        queue.push(neighbor);
+                    }
+                }
+            }
+
+            components.push(component);
+        }
+
+        components.sort((a, b) => b.length - a.length);
+
+        const hubs = [...airports].sort(
+            (a, b) =>
+                degree.get(String(b.id)) - degree.get(String(a.id))
+        ).slice(0, 10);
+
+        document.getElementById("summary").innerHTML = `
+            <div class="stat"><strong>Airports:</strong> ${airports.length}</div>
+            <div class="stat"><strong>Unique connections:</strong> ${routes.length}</div>
+            <div class="stat"><strong>Connected components:</strong> ${components.length}</div>
+            <div class="stat"><strong>Largest component:</strong> ${components[0]?.length || 0} airports</div>
+        `;
+
+        document.getElementById("hub-list").innerHTML = hubs.map(airport =>
+            `<li>${airport.iata} — ${airport.name}
+            (${degree.get(String(airport.id))} connections)</li>`
+        ).join("");
+
+        function getAirport(code) {
+            return byCode.get(code.trim().toUpperCase());
+        }
+
+        function showAirport(airport) {
+            map.setView([airport.lat, airport.lon], 7);
+            airport.marker.openPopup();
+        }
+
+        document.getElementById("search-button").addEventListener("click", () => {
+            const code = document.getElementById("airport-code").value;
+            const airport = getAirport(code);
+            const result = document.getElementById("airport-result");
+
+            if (!airport) {
+                result.textContent = "Airport code not found in this dataset.";
+                return;
+            }
+
+            result.innerHTML = `
+                <strong>${airport.iata} — ${airport.name}</strong><br>
+                City: ${airport.city}<br>
+                Coordinates: ${airport.lat.toFixed(4)}, ${airport.lon.toFixed(4)}<br>
+                Degree: ${degree.get(String(airport.id)) || 0}
+            `;
+
+            showAirport(airport);
+        });
+
+        document.getElementById("airport-code").addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                document.getElementById("search-button").click();
+            }
+        });
+
+        // BFS returns a sequence of airport IDs, or null if unreachable.
+        function bfs(startId, endId) {
+            const queue = [startId];
+            const previous = new Map([[startId, null]]);
+
+            for (let i = 0; i < queue.length; i++) {
+                const current = queue[i];
+
+                if (current === endId) {
+                    const path = [];
+                    let step = endId;
+
+                    while (step !== null) {
+                        path.push(step);
+                        step = previous.get(step);
+                    }
+
+                    return path.reverse();
+                }
+
+                for (const neighbor of (adjacency.get(current) || [])) {
+                    if (!previous.has(neighbor)) {
+                        previous.set(neighbor, current);
+                        queue.push(neighbor);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        document.getElementById("connection-button").addEventListener("click", () => {
+            const source = getAirport(document.getElementById("source-code").value);
+            const destination = getAirport(document.getElementById("destination-code").value);
+            const result = document.getElementById("connection-result");
+
+            if (!source || !destination) {
+                result.textContent = "Enter two airport codes that exist in this dataset.";
+                return;
+            }
+
+            const path = bfs(String(source.id), String(destination.id));
+
+            if (!path) {
+                result.textContent =
+                    `No path found between ${source.iata} and ${destination.iata} in this network.`;
+                return;
+            }
+
+            const codes = path.map(id => byId.get(id).iata);
+            result.innerHTML = `
+                <strong>Connection found!</strong><br>
+                Hops: ${path.length - 1}<br>
+                Path: ${codes.join(" → ")}
+            `;
+
+            showAirport(source);
+        });
+
+        status.textContent =
+            `Loaded ${airports.length} airports and ${routes.length} unique connections.`;
+    } catch (error) {
+        status.textContent = "Error: " + error.message;
+        console.error(error);
+    }
+}
+
+startApp();
+</script>
 </body>
 </html>
-
